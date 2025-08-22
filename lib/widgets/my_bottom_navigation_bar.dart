@@ -17,7 +17,10 @@ class MyBottomNavigationBarWidget extends StatelessWidget {
           child: NavigationBar(
             destinations: [
               NavigationDestination(
-                icon: Icon(Icons.radio),
+                icon: Icon(
+                  Icons.radio,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 label: 'Live',
                 selectedIcon: Icon(
                   Icons.radio,
@@ -25,7 +28,10 @@ class MyBottomNavigationBarWidget extends StatelessWidget {
                 ),
               ),
               NavigationDestination(
-                icon: Icon(Icons.archive),
+                icon: Icon(
+                  Icons.archive,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,  
+                ),
                 label: 'Archive',
                 selectedIcon: Icon(
                   Icons.archive,
@@ -38,6 +44,7 @@ class MyBottomNavigationBarWidget extends StatelessWidget {
             ),
             backgroundColor: Theme.of(context).navigationBarTheme.backgroundColor,            
             selectedIndex: navigationProvider.currentIndex,
+            height: 72.0,
             onDestinationSelected: (index) {
               navigationProvider.setCurrentIndex(index);
             },

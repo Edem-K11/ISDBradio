@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:isdb_radio/pages/research_archive_page.dart';
 import 'package:isdb_radio/widgets/archive_record_tile.dart';
 
-class ArchiveListPage extends StatelessWidget {
-const ArchiveListPage({ super.key });
+class CustomScrollPage extends StatelessWidget {
+const CustomScrollPage({ super.key });
 
   @override
   Widget build(BuildContext context){

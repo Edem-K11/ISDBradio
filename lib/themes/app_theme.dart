@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Thème clair
@@ -12,10 +13,12 @@ class AppTheme {
       surface: Colors.green.shade50,
       
     ),
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      bodyMedium: TextStyle(fontSize: 14),
-      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    textTheme: GoogleFonts.poppinsTextTheme(
+      const TextTheme(
+        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        bodyMedium: TextStyle(fontSize: 14),
+        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.green,
@@ -26,7 +29,7 @@ class AppTheme {
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.white,
       indicatorColor: Colors.greenAccent.withValues(alpha: 0.2) ,
-      labelTextStyle: MaterialStatePropertyAll(
+      labelTextStyle: WidgetStatePropertyAll(
         TextStyle(fontWeight: FontWeight.w600),
       ),
     ),
@@ -53,7 +56,7 @@ class AppTheme {
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.green.shade900,
       indicatorColor: Colors.greenAccent.withValues(alpha: 0.3),
-      labelTextStyle: MaterialStatePropertyAll(
+      labelTextStyle: WidgetStatePropertyAll(
         TextStyle(fontWeight: FontWeight.w600),
       ),
     ),

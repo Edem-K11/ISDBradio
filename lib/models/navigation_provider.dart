@@ -5,10 +5,6 @@ import 'package:isdb_radio/pages/radio_streaming_page.dart';
 class NavigationProvider extends ChangeNotifier {
   int _currentIndex = 0;
 
-  final List<String> _titles = [
-    'Live',
-    'Archive',
-  ];
 
   final List<Widget> _pages = [
     RadioStreamingPage(),
@@ -18,12 +14,19 @@ class NavigationProvider extends ChangeNotifier {
   int get currentIndex => _currentIndex;
   List<Widget> get pages => _pages;
   Widget get currentPage => _pages[_currentIndex];
-  String get currentTitle => _titles[_currentIndex];
 
   void setCurrentIndex(int index) {
     if (_currentIndex != index) {
       _currentIndex = index;
       notifyListeners();
     }
+  }
+
+  void goToLive() {
+    setCurrentIndex(0);
+  }
+
+  void goToArchive() {
+    setCurrentIndex(1);
   }
 }
