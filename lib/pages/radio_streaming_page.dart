@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:isdb_radio/models/navigation_provider.dart';
+import 'package:isdb_radio/providers/navigation_provider.dart';
 import 'package:isdb_radio/widgets/audio_animation.dart';
 import 'package:isdb_radio/widgets/my_drawer.dart';
 import 'package:provider/provider.dart';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:isdb_radio/models/navigation_provider.dart';
+import 'package:isdb_radio/providers/navigation_provider.dart';
+import 'package:isdb_radio/providers/streaming_provider.dart';
 import 'package:isdb_radio/widgets/my_bottom_navigation_bar.dart';
+import 'package:isdb_radio/widgets/streaming_mini_player.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -29,12 +31,32 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<NavigationProvider>(
-      builder: (context, navigationProvider, child) {
+    return Consumer2<NavigationProvider, StreamingProvider>(
+      builder: (context, navigationProvider, streamingProvider, child) {
+        int currentIndex = navigationProvider.currentIndex;
         Widget currentPage = navigationProvider.currentPage;
+        
+        // Logique pour afficher le mini player de streaming
+        final shouldShowStreamingMiniPlayer =  currentIndex != 0 && streamingProvider.isRadioMode; // Évite d'avoir les deux en même temps
+        
         return SafeArea(
           child: Scaffold(
-            body: currentPage,
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  bottom: 0,
+                  child: currentPage
+                ),
+
+                if (shouldShowStreamingMiniPlayer)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: const StreamingMiniPlayer(),
+                  ),
+              ],
+            ),
             bottomNavigationBar: const MyBottomNavigationBarWidget(),
           ),
         );

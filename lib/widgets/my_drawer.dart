@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:isdb_radio/models/navigation_provider.dart';
+import 'package:isdb_radio/providers/navigation_provider.dart';
 import 'package:isdb_radio/pages/isdb_info_page.dart';
 import 'package:isdb_radio/widgets/draw_list_tile.dart';
 import 'package:provider/provider.dart';
