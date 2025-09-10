@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:isdb_radio/providers/navigation_provider.dart';
+import 'package:isdb_radio/providers/streaming_provider.dart';
 import 'package:isdb_radio/widgets/audio_animation.dart';
 import 'package:isdb_radio/widgets/my_drawer.dart';
 import 'package:provider/provider.dart';
@@ -18,18 +19,7 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
   late AnimationController _vinylController;
   late AnimationController _waveController;
   late AnimationController _audioWaveController;
-  bool _isPlaying = false;
 
-  void togglePlay() {
-    setState(() {
-      _isPlaying = !_isPlaying;
-      if (_isPlaying) {
-        _vinylController.repeat();
-      } else {
-        _vinylController.stop();
-      }
-    });
-  }
 
   @override
   void initState() {
@@ -63,6 +53,15 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
   Widget build(BuildContext context){
     return Consumer<NavigationProvider>(
       builder: (context, navigationProvider, child) {
+        final bool isPlaying = context.watch<StreamingProvider>().isRadioPlaying;
+    
+      // Animation controlée par l'état de lecture 
+        if (isPlaying) {
+          _vinylController.repeat();
+        } else {
+          _vinylController.stop();
+        }
+
         return Scaffold(
           appBar: AppBar(
               backgroundColor: Colors.transparent,
@@ -90,7 +89,7 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
               
               RadioWavyLineAndVynilRotation(
                 waveController: _waveController, 
-                isPlaying: _isPlaying, 
+                isPlaying: isPlaying, 
                 vinylController: _vinylController, 
               ),
         
@@ -98,7 +97,7 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
 
               AudioWaveAndLiveIndicator(
                 audioWaveController: _audioWaveController, 
-                isPlaying: _isPlaying
+                isPlaying: isPlaying
               ),
         
               // Play button with volume control
@@ -136,87 +135,80 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
 
   /// Construit le bouton de lecture avec contrôles de volume
   Widget _buildPlayButtonWithVolumeControl (BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Speaker icon gauche
-          const SizedBox(
-            width: 28,
-            height: 28,
-            ),
-          
-          // Play/Pause button central
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                  spreadRadius: 2,
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+    return Consumer<StreamingProvider>(
+      builder: (context, streamingProvider, child) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Speaker icon gauche
+              const SizedBox(
+                width: 28,
+                height: 28,
                 ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(40),
-                onTap: togglePlay ,// streamingProvider.toggleStreaming,
-                child: Center(
-                  child: _isPlaying
-                  // streamingProvider.isLoading
-                  //   ? const SizedBox(
-                  //       width: 30,
-                  //       height: 30,
-                  //       child: CircularProgressIndicator(
-                  //         color: Colors.white,
-                  //         strokeWidth: 3,
-                  //       ),
-                  //     )
-                  //   : Icon(
-                  //       streamingProvider.isStreaming
-                  //           ? Icons.pause
-                  //           : Icons.play_arrow,
-                  //       color: Colors.white,
-                  //       size: 40,
-                  //     ),
-                  ? Icon(
-                      Icons.pause,
-                      color: Colors.white,
-                      size: 30,
-                    )
-                  : Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 30,
+              
+              // Play/Pause button central
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      spreadRadius: 2,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                  )
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(40),
+                    onTap: streamingProvider.toggleStreaming,
+                    child: Center(
+                      child: streamingProvider.isLoading
+                        ? const SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          )
+                        : Icon(
+                            streamingProvider.isRadioPlaying
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                      )
+                    ),
+                  ),
+                ),
+        
+                   // Volume icon droit
+              GestureDetector(
+                onTap: () {
+                  // setState(() {
+                  //   showVolumeSlider = !showVolumeSlider;
+                  // });
+                },
+                child: const Icon(
+                  Icons.volume_up,
+                  size: 28,
+                  color: Colors.grey,
                 ),
               ),
-            ),
-
-               // Volume icon droit
-          GestureDetector(
-            onTap: () {
-              // setState(() {
-              //   showVolumeSlider = !showVolumeSlider;
-              // });
-            },
-            child: const Icon(
-              Icons.volume_up,
-              size: 28,
-              color: Colors.grey,
-            ),
+            ],
           ),
-        ],
-      ),
-      );
+          );
+      }
+    );
   
   }
 
