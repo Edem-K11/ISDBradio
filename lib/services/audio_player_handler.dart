@@ -9,7 +9,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
   
   // Playlist
   List<Archive> _playlist = [];
-  int _currentIndex = 0;
+  int _currentIndex = 0;  
 
   // Radio streaming
   bool _isRadioMode = false;
@@ -140,7 +140,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
   Future<void> startRadioStream({
     required String streamUrl,
     required String title,
-    String? artist,
+    String? author,
     String? artUri,
   }) async {
     try {
@@ -158,7 +158,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
       mediaItem.add(MediaItem(
         id: 'radio_stream',
         title: title,
-        artist: artist ?? "Live Stream",
+        artist: author ?? "Live Stream",
         artUri: artUri != null ? Uri.parse(artUri) : null,
         duration: null, // Pas de durée pour le streaming
         extras: {
@@ -254,15 +254,30 @@ class AudioPlayerHandler extends BaseAudioHandler {
     mediaItem.add(MediaItem(
       id: _currentIndex.toString(),
       title: currentArchive.title,
-      artist: currentArchive.artist,
-      artUri: currentArchive.albumImagePath.isNotEmpty 
-        ? Uri.parse(currentArchive.albumImagePath) 
+      artist: currentArchive.author,
+      artUri: currentArchive.imageUrl != null
+        ? Uri.parse(currentArchive.imageUrl!)
         : null,
-      duration: await _audioPlayer.setAsset('assets/${currentArchive.audioPath}'),
+      duration: await _loadAudio(currentArchive.audioUrl),
     ));
 
     // Start playing after loading
     play();
+  }
+
+  // Charge l'audio de l'URL de l'audio
+  Future<Duration?> _loadAudio(String audioPath) async {
+    try {
+      // Vérifier si c'est une URL (commence par http/https)
+      if (audioPath.startsWith('http://') || audioPath.startsWith('https://')) {
+        // URL distante (podcast)
+        return await _audioPlayer.setUrl(audioPath);
+      }
+    } catch (e) {
+      print('Erreur lors du chargement audio: $e');
+      return null;
+    }
+    return null;
   }
 
   // METHODES POUR AUDIO SERVICE (override)

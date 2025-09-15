@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:isdb_radio/pages/archive_list_page.dart';
 import 'package:isdb_radio/pages/radio_streaming_page.dart';
+import 'package:isdb_radio/pages/podcast_page.dart';
 
 class NavigationProvider extends ChangeNotifier {
   int _currentIndex = 0;
@@ -9,6 +10,7 @@ class NavigationProvider extends ChangeNotifier {
   final List<Widget> _pages = [
     RadioStreamingPage(),
     ArchiveListPage(),
+    // PodcastPage(),
   ];
 
   int get currentIndex => _currentIndex;

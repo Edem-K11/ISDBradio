@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
+import 'package:isdb_radio/providers/archive_provider.dart';
 import 'package:isdb_radio/providers/navigation_provider.dart';
 import 'package:isdb_radio/providers/streaming_provider.dart';
 import 'package:isdb_radio/pages/home_page.dart';
@@ -30,6 +31,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => NavigationProvider()),
+        ChangeNotifierProvider(create: (context) => ArchiveProvider(audioHandler)),
         ChangeNotifierProvider(create: (context) => StreamingProvider(audioHandler)),
       ],
       child: MyApp(),

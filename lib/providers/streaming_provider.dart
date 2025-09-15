@@ -72,7 +72,7 @@ class StreamingProvider extends ChangeNotifier {
       await _audioHandler.startRadioStream(
         streamUrl: _streamUrl,
         title: _stationName,
-        artist: "Live Stream",
+        author: "Live Stream",
         artUri: _stationImagePath,
       );
       
