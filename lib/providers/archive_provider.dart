@@ -10,8 +10,17 @@ class ArchiveProvider extends ChangeNotifier {
   final AudioPlayerHandler _audioHandler;
   final RssService _rssService = RssService();
   
-  // Playlist de chansons
+  // Playlist de Archives
   final List<Archive> _playlist = [];
+
+
+  // Archive actuellement jouée
+  Archive? get currentArchive {
+    if (_currentArchiveIndex != null && _currentArchiveIndex! >= 0 && _currentArchiveIndex! < _playlist.length) {
+      return _playlist[_currentArchiveIndex!];
+    }
+    return null;
+  }
 
   
   // Index de la chanson actuelle
@@ -30,7 +39,6 @@ class ArchiveProvider extends ChangeNotifier {
 ArchiveProvider(this._audioHandler) {
   _initAudioService();
   loadPlaylist();
-  print("Initialisation de l'archive provider réussie");
 }
   
   // Initialiser le service audio
@@ -48,7 +56,7 @@ ArchiveProvider(this._audioHandler) {
     
     // Écouter les changements d'état
     _audioHandler.playbackState.listen((state) {
-      _audioPlayerIsPlaying = state.playing;
+      _audioPlayerIsPlaying = state.playing; print("Player state changed: $_audioPlayerIsPlaying");
       _currentDuration = state.position;
       notifyListeners();
     });
@@ -69,30 +77,23 @@ ArchiveProvider(this._audioHandler) {
   }
 
   Future<void> loadPlaylist({String? rssUrl}) async {
-    print("initialisation de loadPlaylist dans l'archive provider");
     _loading = true;
     notifyListeners();
-    print("Loading passe à true dans l'archive provider");
     try {
       final fetchedArchives = await _rssService.fetchFeed(rssUrl);
-      print("Dans le try de la méthode loadPlaylist de l'archive provider");
-      print("le fetch est bien lancé");
-      print(fetchedArchives);
-      if (fetchedArchives != null) {
+      if (fetchedArchives != null && fetchedArchives.isNotEmpty) {
         _playlist.clear();
         _playlist.addAll(fetchedArchives);
-        print("ajout des archives à la playlist réussi dans l'archive provider");
         _audioHandler.setPlaylist(_playlist);
         _loading = false;
         notifyListeners();
-        print("Loading repasse à false dans l'archive provider");
-        print("Méthode loadplaylist de la playlist réussi dans l'archive provider");
       }else {
+        _loading = false;
+        notifyListeners(); 
         print('le fetch est vide');
       }
     } catch (e) {
       errorMessage = "Erreur chargement playlist: $e.toString()";
-      print("Dans le catch de la méthode loadPlaylist de l'archive provider");
       print(errorMessage);
       _loading = false;
       notifyListeners();

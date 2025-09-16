@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:isdb_radio/providers/navigation_provider.dart';
+import 'package:isdb_radio/themes/theme.dart';
 import 'package:provider/provider.dart';
 
 class MyBottomNavigationBarWidget extends StatelessWidget {
@@ -18,23 +19,23 @@ class MyBottomNavigationBarWidget extends StatelessWidget {
             destinations: [
               NavigationDestination(
                 icon: Icon(
-                  Icons.radio,
+                  AppIcons.radar,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 label: 'Live',
                 selectedIcon: Icon(
-                  Icons.radio,
+                  AppIcons.radarFill,
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               NavigationDestination(
                 icon: Icon(
-                  Icons.archive,
+                  AppIcons.archive,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,  
                 ),
                 label: 'Archive',
                 selectedIcon: Icon(
-                  Icons.archive,
+                  AppIcons.archiveFill,
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),

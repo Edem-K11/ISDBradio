@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:isdb_radio/providers/navigation_provider.dart';
 import 'package:isdb_radio/pages/isdb_info_page.dart';
+import 'package:isdb_radio/themes/theme.dart';
 import 'package:isdb_radio/widgets/draw_list_tile.dart';
 import 'package:provider/provider.dart';
 
@@ -119,7 +120,7 @@ class MyDrawer extends StatelessWidget {
                     children: [
                       // Items de navigation principale
                       DrawerListTile(
-                        icon: Icons.sensors_rounded,
+                        icon: AppIcons.radar,
                         title: 'Direct',
                         isSelected: navigationProvider.currentIndex == 0,
                         onTap: () {
@@ -128,7 +129,7 @@ class MyDrawer extends StatelessWidget {
                         },
                       ),
                       DrawerListTile(
-                        icon: Icons.archive,
+                        icon: AppIcons.archive,
                         title: 'Émissions',
                         isSelected: navigationProvider.currentIndex == 1,
                         onTap: () {

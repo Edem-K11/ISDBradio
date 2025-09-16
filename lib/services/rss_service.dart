@@ -18,9 +18,7 @@ class RssService {
       final response = await http.get(Uri.parse(feedUrl));
       if (response.statusCode == 200) {
         final feed = RssFeed.parse(response.body);
-        print("Renvoie des archives à archive provider");
         final listArchive = _getArchives(feed);
-        print("Voici la liste des archives obtenue : $listArchive");
         return listArchive;
         
       } else {
