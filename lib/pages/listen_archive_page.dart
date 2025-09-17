@@ -78,7 +78,7 @@ class _ListenArchivePageState extends State<ListenArchivePage>
       leading: IconButton(
         iconSize: _appBarIconSize,
         icon: Icon(
-          Icons.keyboard_arrow_down_rounded,
+          AppIcons.arrowDown,
           color: Theme.of(context).colorScheme.onSurface,
         ),
         onPressed: () => Navigator.pop(context),
@@ -223,23 +223,23 @@ class _ListenArchivePageState extends State<ListenArchivePage>
           _buildControlButton(
             context,
             AppIcons.skipPrevious,
-            () => _onSkipPrevious(),
+            () => _onSkipPrevious(archiveProvider),
           ),
           _buildControlButton(
             context,
             AppIcons.rewindBackward,
-            () => _onRewind(),
+            () => _onRewind(archiveProvider),
           ),
           _buildPlayPauseButton(context, archiveProvider),
           _buildControlButton(
             context,
             AppIcons.rewindForward,
-            () => _onFastForward(),
+            () => _onFastForward(archiveProvider),
           ),
           _buildControlButton(
             context,
             AppIcons.skipForward,
-            () => _onSkipNext(),
+            () => _onSkipNext(archiveProvider),
           ),
         ],
       ),
@@ -264,7 +264,7 @@ class _ListenArchivePageState extends State<ListenArchivePage>
       ),
       child: IconButton(
         icon: Icon(
-          archiveProvider.audioPlayerIsPlaying ? AppIcons.pause : AppIcons.play,
+          archiveProvider.audioPlayerIsPlaying ? AppIcons.pause : AppIcons.playFill,
           color: Theme.of(context).colorScheme.onSurface,
         ),
         iconSize: _playButtonSize,
@@ -327,19 +327,21 @@ class _ListenArchivePageState extends State<ListenArchivePage>
   }
 
   // Gestionnaires des boutons de contrôle (à implémenter selon tes besoins)
-  void _onSkipPrevious() {
+  void _onSkipPrevious(ArchiveProvider archiveProvider) {
     // TODO: Implémenter la logique de piste précédente
+    archiveProvider.playNextArchive();
   }
 
-  void _onRewind() {
+  void _onRewind(ArchiveProvider archiveProvider) {
     // TODO: Implémenter la logique de retour arrière (ex: -15 secondes)
   }
 
-  void _onFastForward() {
+  void _onFastForward(ArchiveProvider archiveProvider) {
     // TODO: Implémenter la logique d'avance rapide (ex: +15 secondes)
   }
 
-  void _onSkipNext() {
+  void _onSkipNext(ArchiveProvider archiveProvider) {
     // TODO: Implémenter la logique de piste suivante
+    archiveProvider.playNextArchive();
   }
 }

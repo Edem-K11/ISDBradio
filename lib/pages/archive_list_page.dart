@@ -13,6 +13,7 @@ const ArchiveListPage({ super.key });
   void _goToEpisode(BuildContext context, int archiveIndex) {
     final archiveProvider = Provider.of<ArchiveProvider>(context, listen: false);
     archiveProvider.setCurrentArchiveIndex(archiveIndex);
+    print('Navigating to episode index: $archiveIndex');
     
     Navigator.push(
       context,
@@ -97,20 +98,9 @@ const ArchiveListPage({ super.key });
                   ),
                 ),
               ),
-              // SliverList(
-              //   delegate: SliverChildBuilderDelegate(
-              //     (context, index) {
-              //       return ArchiveRecordTile();
-              //     },
-              //     childCount: 20, // Number of items in the list
-              //   ),
-              // ),
-              // SliverGrid(),
-              // SliverToBoxAdapter(),
               SliverFillRemaining(
                 child: _buildBody(context, archiveProvider),
               ),
-              // SliverPadding()
             ]
           ),
         );
@@ -235,11 +225,6 @@ const ArchiveListPage({ super.key });
       onRefresh: () => _refreshArchive(context),
       child: Column(
         children: [
-          // En-tête du podcast
-          // if (archiveProvider.current != null)
-          //   _buildPodcastHeader(context, archiveProvider),
-          
-          // Liste des épisodes
           Expanded(
             child: ListView.separated(
               itemCount: archiveProvider.playlist.length,

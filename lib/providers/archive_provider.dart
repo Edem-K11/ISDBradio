@@ -1,5 +1,6 @@
-
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:isdb_radio/models/archive.dart';
 import 'package:isdb_radio/services/audio_player_handler.dart';
 import 'package:isdb_radio/services/rss_service.dart';
@@ -13,6 +14,8 @@ class ArchiveProvider extends ChangeNotifier {
   // Playlist de Archives
   final List<Archive> _playlist = [];
 
+  // Index de la chanson actuelle
+  int? _currentArchiveIndex;
 
   // Archive actuellement jouée
   Archive? get currentArchive {
@@ -21,10 +24,6 @@ class ArchiveProvider extends ChangeNotifier {
     }
     return null;
   }
-
-  
-  // Index de la chanson actuelle
-  int? _currentArchiveIndex;
 
   bool _playListIsOn = false;
   bool _loading = false;
@@ -43,20 +42,14 @@ ArchiveProvider(this._audioHandler) {
   
   // Initialiser le service audio
   void _initAudioService() {
-
-
     _audioHandler.playlistPlayingOn.listen((value){
       _playListIsOn = value;
       notifyListeners();
     });
     
-
-    // Définir la playlist dans le handler
-    _audioHandler.setPlaylist(_playlist);
-    
     // Écouter les changements d'état
     _audioHandler.playbackState.listen((state) {
-      _audioPlayerIsPlaying = state.playing; print("Player state changed: $_audioPlayerIsPlaying");
+      _audioPlayerIsPlaying = state.playing;
       _currentDuration = state.position;
       notifyListeners();
     });
@@ -68,7 +61,7 @@ ArchiveProvider(this._audioHandler) {
       }
     });
     
-    // Écouter les changements d'index (Quand on click sur une nouvelle archive)
+    // Écouter les changements d'index
     _audioHandler.currentIndexStream.listen((index) {
       _currentDuration = Duration.zero;
       _currentArchiveIndex = index;
@@ -76,6 +69,23 @@ ArchiveProvider(this._audioHandler) {
     });
   }
 
+  // Méthode pour convertir Archive en AudioSource
+  List<AudioSource> _convertArchivesToAudioSources(List<Archive> archives) {
+    return archives.map((archive) {
+      return AudioSource.uri(
+        Uri.parse(archive.audioUrl),
+        tag: MediaItem(
+          id: archive.audioUrl,
+          title: archive.title,
+          artist: archive.author ?? 'Inconnu',
+          artUri: Uri.tryParse(archive.imageUrl ?? ''),
+          duration: archive.duration,
+        ),
+      );
+    }).toList();
+  }
+
+  // Méthode pour parser la durée depuis une string
   Future<void> loadPlaylist({String? rssUrl}) async {
     _loading = true;
     notifyListeners();
@@ -84,21 +94,24 @@ ArchiveProvider(this._audioHandler) {
       if (fetchedArchives != null && fetchedArchives.isNotEmpty) {
         _playlist.clear();
         _playlist.addAll(fetchedArchives);
-        _audioHandler.setPlaylist(_playlist);
+        
+        // Convertir en AudioSources avant de passer au handler
+        final audioSources = _convertArchivesToAudioSources(fetchedArchives);
+        await _audioHandler.setPlaylist(audioSources, _playlist);
+        
         _loading = false;
         notifyListeners();
-      }else {
+      } else {
         _loading = false;
         notifyListeners(); 
         print('le fetch est vide');
       }
     } catch (e) {
-      errorMessage = "Erreur chargement playlist: $e.toString()";
+      errorMessage = "Erreur chargement playlist: ${e.toString()}";
       print(errorMessage);
       _loading = false;
       notifyListeners();
     }
-    
   }
 
   // Rafraîchir la liste des archives
@@ -133,15 +146,11 @@ ArchiveProvider(this._audioHandler) {
     await _audioHandler.pause();
   }
   
-  Future<void> resume() async {
-    await _audioHandler.play();
-  }
-  
   Future<void> pauseOrResume() async {
     if (_audioPlayerIsPlaying) {
       await pause();
     } else {
-      await resume();
+      await play();
     }
   }
   
@@ -162,5 +171,4 @@ ArchiveProvider(this._audioHandler) {
     _audioHandler.stop();
     super.dispose();
   }
-
 }

@@ -120,8 +120,8 @@ class MyDrawer extends StatelessWidget {
                     children: [
                       // Items de navigation principale
                       DrawerListTile(
-                        icon: AppIcons.radar,
-                        title: 'Direct',
+                        icon: navigationProvider.currentIndex == 0? AppIcons.radar : AppIcons.radarFill,
+                        title: 'Live',
                         isSelected: navigationProvider.currentIndex == 0,
                         onTap: () {
                           navigationProvider.goToLive();
@@ -129,7 +129,7 @@ class MyDrawer extends StatelessWidget {
                         },
                       ),
                       DrawerListTile(
-                        icon: AppIcons.archive,
+                        icon: navigationProvider.currentIndex == 1? AppIcons.archive : AppIcons.archiveFill,
                         title: 'Émissions',
                         isSelected: navigationProvider.currentIndex == 1,
                         onTap: () {

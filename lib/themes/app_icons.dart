@@ -46,10 +46,12 @@ class AppIcons {
   static const IconData play = MingCuteIcons.mgc_play_line;
   static const IconData playFill = MingCuteIcons.mgc_play_fill;
   static const IconData pause = MingCuteIcons.mgc_pause_line;
+  static const IconData pauseFill = MingCuteIcons.mgc_pause_fill;
   static const IconData rewindBackward = MingCuteIcons.mgc_rewind_backward_10_line;
   static const IconData rewindForward = MingCuteIcons.mgc_rewind_forward_10_line;
   static const IconData skipPrevious = MingCuteIcons.mgc_skip_previous_line;
   static const IconData skipForward = MingCuteIcons.mgc_skip_forward_line;
+  static const IconData volume = MingCuteIcons.mgc_volume_line;
   
   // Système
   static const IconData warning = MingCuteIcons.mgc_warning_line;

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:isdb_radio/providers/navigation_provider.dart';
 import 'package:isdb_radio/providers/streaming_provider.dart';
+import 'package:isdb_radio/themes/theme.dart';
 import 'package:isdb_radio/widgets/audio_animation.dart';
 import 'package:isdb_radio/widgets/my_drawer.dart';
 import 'package:provider/provider.dart';
@@ -53,7 +54,7 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
   Widget build(BuildContext context){
     return Consumer<NavigationProvider>(
       builder: (context, navigationProvider, child) {
-        final bool isPlaying = context.watch<StreamingProvider>().isRadioPlaying;
+        final bool isPlaying = context.watch<StreamingProvider>().radioIsPlaying;
     
       // Animation controlée par l'état de lecture 
         if (isPlaying) {
@@ -73,7 +74,7 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
                     onPressed: () {
                       Scaffold.of(innerContext).openDrawer();
                     },
-                    icon: const Icon(Icons.menu),
+                    icon: const Icon(AppIcons.menu),
                   );
                 },
               ),
@@ -180,9 +181,9 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
                             ),
                           )
                         : Icon(
-                            streamingProvider.isRadioPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
+                            streamingProvider.radioIsPlaying
+                                ? AppIcons.pause
+                                : AppIcons.playFill,
                             color: Colors.white,
                             size: 40,
                           ),
@@ -199,7 +200,7 @@ class _RadioStreamingPageState extends State<RadioStreamingPage>
                   // });
                 },
                 child: const Icon(
-                  Icons.volume_up,
+                  AppIcons.volume,
                   size: 28,
                   color: Colors.grey,
                 ),

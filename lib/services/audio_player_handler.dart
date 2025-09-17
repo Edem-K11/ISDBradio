@@ -87,9 +87,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
 
       // Déterminer le contrôle de lecture/pause/chargement
       MediaControl playPauseControl;
-      final isLoading = processingState == ProcessingState.loading || 
-                       processingState == ProcessingState.buffering ;
-      
+      final isLoading = processingState == ProcessingState.loading;      
       // Broadcasting de l'état du loading
       _radioLoading.add(isLoading);
 
@@ -194,6 +192,21 @@ class AudioPlayerHandler extends BaseAudioHandler {
     _radioModeController.add(false);    
   }
   
+  /// Arrêter le streaming radio
+  Future<void> resumeRadioStream() async {
+
+    await _audioPlayer.pause();
+
+    // _isRadioMode = false;
+    // _currentRadioUrl = null;
+    // _currentRadioTitle = null;
+
+    // // Effacer les métadonnées
+    // mediaItem.add(null);
+    
+    // _radioModeController.add(false);    
+  }
+
   /// Basculer entre pause/play pour le radio
   Future<void> toggleRadioPlayback() async {
     if (_isRadioMode) {
@@ -205,6 +218,8 @@ class AudioPlayerHandler extends BaseAudioHandler {
     }
   }
 
+  // MÉTHODES POUR LA PLAYLIST
+
   /// Passer en mode playlist
   Future<void> switchToPlaylistMode() async {
     if (_isRadioMode) {
@@ -214,17 +229,32 @@ class AudioPlayerHandler extends BaseAudioHandler {
     _radioModeController.add(false);
     _playlistPlayingOn.add(true);
   }
+
+  
   
   // Définir la playlist
-  Future<void> setPlaylist(List<Archive> playlist) async {
-    _playlist = playlist;
-    _playlistController.add(_playlist);
+  Future<void> setPlaylist(List<AudioSource> audioSources, List<Archive> archives) async {
+    try {
+      if (audioSources.isEmpty || archives.isEmpty) {
+        return print("Liste vide détectée, setPlaylist annulée");
+      }
+      // Synchronisation des deux listes
+      _playlist.clear();
+      _playlist.addAll(archives);
+
+
+      // Configuration du lecteur
+      await _audioPlayer.setAudioSources(audioSources);
+
+    } catch (e) {
+      print('Erreur setPlaylist: $e');
+      rethrow;
+    }
   }
   
   // Définir l'index actuel
   Future<void> setCurrentIndex(int index) async {
     if (index >= 0 && index < _playlist.length) {
-      
       // Arrêter le radio si en cours
       if (_isRadioMode) {
         await stopRadioStream();
@@ -235,6 +265,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
 
       if(_currentIndex != index) {
           _currentIndex = index;
+          print("Changement d'index vers (currentIndex): $_currentIndex");
           _currentIndexController.add(_currentIndex);
           await _loadCurrentArchive();
       }
@@ -249,7 +280,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
     _radioModeController.add(false);
     
     final currentArchive = _playlist[_currentIndex];
-    
+
     // Mettre à jour les métadonnées
     mediaItem.add(MediaItem(
       id: _currentIndex.toString(),
@@ -265,12 +296,17 @@ class AudioPlayerHandler extends BaseAudioHandler {
     play();
   }
 
-  // Charge l'audio de l'URL de l'audio
+  // Charge l'URL de l'audio
   Future<Duration?> _loadAudio(String audioPath) async {
     try {
       // Vérifier si c'est une URL (commence par http/https)
       if (audioPath.startsWith('http://') || audioPath.startsWith('https://')) {
         // URL distante (podcast)
+
+        _audioPlayer.stop();
+
+        print("Chargement de l'URL distante: $audioPath");
+
         return await _audioPlayer.setUrl(audioPath);
       }
     } catch (e) {

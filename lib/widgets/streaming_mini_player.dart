@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:isdb_radio/providers/streaming_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../themes/theme.dart';
+
 class StreamingMiniPlayer extends StatelessWidget {
-  const StreamingMiniPlayer({Key? key}) : super(key: key);
+  const StreamingMiniPlayer({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<StreamingProvider>(
       builder: (context, streamingProvider, child) {
         // Ne pas afficher le mini player si le streaming n'est pas actif
-        if (!streamingProvider.isRadioPlaying) {
+        if (!streamingProvider.radioActive) {
           return const SizedBox.shrink();
         }
         
@@ -96,10 +98,11 @@ class StreamingMiniPlayer extends StatelessWidget {
                     // Bouton de contrôle
                     IconButton(
                       icon: Icon(
-                        streamingProvider.isRadioPlaying 
-                            ? Icons.pause 
-                            : Icons.play_arrow,
+                        streamingProvider.radioIsPlaying 
+                            ? AppIcons.pause 
+                            : AppIcons.playFill,
                         size: 28,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       onPressed: () {
                         streamingProvider.toggleStreaming();

@@ -8,7 +8,8 @@ class StreamingProvider extends ChangeNotifier {
   
   // État du streaming
   bool _isLoading = false;
-  bool _isStreaming = false;
+  bool _radioModeActive = false;
+  bool _radioIsPlaying = false;
   bool _isLive = false;
   final String _stationName = "Radio ISDB";
   final String _stationImagePath = 'assets/images/logo_isdb.png';
@@ -32,31 +33,31 @@ class StreamingProvider extends ChangeNotifier {
 
     // Écouter les changements d'état du mode radio
     _audioHandler.radioModeStream.listen((isRadioMode) {
-      if (isRadioMode != _isStreaming) {
-        _isStreaming = isRadioMode;
+      if (isRadioMode != _radioModeActive) {
+        _radioModeActive = isRadioMode;
         notifyListeners();
       }
+      notifyListeners();
     });
     
     // Écouter les changements d'état de lecture
     _audioHandler.playbackState.listen((state) {
-      final wasStreaming = _isStreaming;
-      _isStreaming = _audioHandler.isRadioMode && state.playing;
+      final radioWasPlaying = _radioIsPlaying;
+      _radioIsPlaying = _audioHandler.isRadioMode && state.playing;
       
-      if (wasStreaming != _isStreaming) {
+      if (radioWasPlaying != _radioIsPlaying) {
         notifyListeners();
       }
     });
   }
   
   // Méthode pour obtenir l'état de lecture de la radio
-  bool get isRadioPlaying => _audioHandler.isPlaying && _audioHandler.isRadioMode;
+  bool get radioIsPlaying => _radioIsPlaying;
   
-  // Getters
-  // bool get isStreaming => _isStreaming;
+  // Getters 
+  bool get radioActive => _radioModeActive;
   bool get isLive => _isLive;
   bool get isLoading => _isLoading;
-  bool get isRadioMode => _audioHandler.isRadioMode;
   String get stationName => _stationName;
   String get stationImagePath => _stationImagePath;
   String get streamUrl => _streamUrl;
@@ -64,8 +65,8 @@ class StreamingProvider extends ChangeNotifier {
   // Contrôles de streaming
   Future<void> startStreaming() async {
     try {
-
-      _isStreaming = true;
+      // _radioIsPlaying = true;
+      _radioModeActive = true;
       _isLive = true;
       notifyListeners();
 
@@ -85,16 +86,25 @@ class StreamingProvider extends ChangeNotifier {
   Future<void> stopStreaming() async {
     try {
       await _audioHandler.stopRadioStream();
-      _isStreaming = false;
+      _radioModeActive = false;
       notifyListeners();
     } catch (e) {
       print('Erreur lors de l\'arrêt du streaming: $e');
     }
   }
+
+  Future<void> pauseStreaming() async {
+    if (_radioModeActive && _radioIsPlaying) {
+      await _audioHandler.pause();
+      _radioIsPlaying = false;
+      notifyListeners();
+    }
+  }
   
   Future<void> toggleStreaming() async {
-    if (_isStreaming) {
-      await stopStreaming();
+    if (_radioIsPlaying) {
+      // await stopStreaming();
+      await pauseStreaming();
     } else {
       await startStreaming();
     }
