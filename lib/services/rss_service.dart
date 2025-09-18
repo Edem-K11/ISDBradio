@@ -42,24 +42,6 @@ class RssService {
       final publicationDate = item.pubDate;
       final durationStr = item.itunes?.duration;
 
-      // if (durationStr != null && durationStr is String) {
-      //   final parts = durationStr.split(':').map(int.parse).toList();
-      //   if (parts.length == 3) {
-      //     duration = Duration(
-      //       hours: parts[0],
-      //       minutes: parts[1],
-      //       seconds: parts[2],
-      //     );
-      //   } else if (parts.length == 2) {
-      //     duration = Duration(
-      //       minutes: parts[0],
-      //       seconds: parts[1],
-      //     );
-      //   } else if (parts.length == 1) {
-      //     duration = Duration(seconds: parts[0]);
-      //   }
-      // }
-
       return Archive(
         title: title,
         audioUrl: audioUrl,
