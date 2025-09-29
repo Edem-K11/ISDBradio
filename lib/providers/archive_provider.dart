@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
+import 'package:isdb_radio/services/cache_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:isdb_radio/models/archive.dart';
 import 'package:isdb_radio/services/audio_player_handler.dart';
@@ -12,20 +14,24 @@ class ArchiveProvider extends ChangeNotifier {
   final RssService _rssService = RssService();
   
   // Playlist de Archives
-  final List<Archive> _playlist = [];
+  List<Archive> _archiveList = [];
+  bool _isRefreshing = false; // Indicateur de mise à jour
+
 
   // Index de la chanson actuelle
   int? _currentArchiveIndex;
 
   // Archive actuellement jouée
   Archive? get currentArchive {
-    if (_currentArchiveIndex != null && _currentArchiveIndex! >= 0 && _currentArchiveIndex! < _playlist.length) {
-      return _playlist[_currentArchiveIndex!];
+    if (_currentArchiveIndex != null && 
+        _currentArchiveIndex! >= 0 && 
+        _currentArchiveIndex! < _archiveList.length) {
+      return _archiveList[_currentArchiveIndex!];
     }
     return null;
   }
 
-  bool _playListIsOn = false;
+  bool _archiveListIsOn = false;
   bool _loading = false;
   String? errorMessage;
 
@@ -34,20 +40,22 @@ class ArchiveProvider extends ChangeNotifier {
   Duration _currentDuration = Duration.zero;
   Duration _totalDuration = Duration.zero;
   
+  // StreamSubscription pour le nettoyage
+  StreamSubscription? _archiveListSubscription;
+  
 // Constructor
 ArchiveProvider(this._audioHandler) {
   _initAudioService();
-  loadPlaylist();
+  _loadData();
 }
   
   // Initialiser le service audio
   void _initAudioService() {
     _audioHandler.playlistPlayingOn.listen((value){
-      _playListIsOn = value;
+      _archiveListIsOn = value;
       notifyListeners();
     });
     
-    // Écouter les changements d'état
     _audioHandler.playbackState.listen((state) {
       _audioPlayerIsPlaying = state.playing;
       _currentDuration = state.position;
@@ -61,7 +69,6 @@ ArchiveProvider(this._audioHandler) {
       }
     });
     
-    // Écouter les changements d'index
     _audioHandler.currentIndexStream.listen((index) {
       _currentDuration = Duration.zero;
       _currentArchiveIndex = index;
@@ -69,7 +76,7 @@ ArchiveProvider(this._audioHandler) {
     });
   }
 
-  // Méthode pour convertir Archive en AudioSource
+  // Méthode pour convertir Archive en AudioSource avec optimisation
   List<AudioSource> _convertArchivesToAudioSources(List<Archive> archives) {
     return archives.map((archive) {
       return AudioSource.uri(
@@ -85,52 +92,95 @@ ArchiveProvider(this._audioHandler) {
     }).toList();
   }
 
-  // Méthode pour parser la durée depuis une string
-  Future<void> loadPlaylist({String? rssUrl}) async {
-    _loading = true;
+  Future<void> _loadData() async {
+    // 1. CHARGER IMMÉDIATEMENT depuis le cache
+    _loadFromCache();
+    
+    // 2. METTRE À JOUR depuis internet (en arrière-plan)
+    _refreshFromNetwork();
+  }
+
+  void _loadFromCache() {
+    // Récupération INSTANTANÉE depuis Hive
+    _archiveList = CacheService.getArchives();
+    notifyListeners(); // L'UI se met à jour immédiatement
+    
+    // Configurer le lecteur audio si on a des données
+    if (_archiveList.isNotEmpty) {
+      final audioSources = _convertArchivesToAudioSources(_archiveList);
+      _audioHandler.setPlaylist(audioSources, _archiveList);
+    }
+  }
+
+  Future<void> _refreshFromNetwork() async {
+    _isRefreshing = true;
     notifyListeners();
+    
     try {
-      final fetchedArchives = await _rssService.fetchFeed(rssUrl);
-      if (fetchedArchives != null && fetchedArchives.isNotEmpty) {
-        _playlist.clear();
-        _playlist.addAll(fetchedArchives);
+      // Récupérer les nouvelles données depuis RSS
+      final freshArchives = await _rssService.fetchFeed(null);
+      
+      if (freshArchives != null && freshArchives.isNotEmpty) {
+        // Marquer comme archives et ajouter la date de cache
+        final archivesWithCache = freshArchives.map((archive) => 
+          Archive(
+            title: archive.title,
+            audioUrl: archive.audioUrl,
+            imageUrl: archive.imageUrl,
+            author: archive.author,
+            publicationDate: archive.publicationDate,
+            duration: archive.duration,
+            cachedAt: DateTime.now(),
+          )
+        ).toList();
         
-        // Convertir en AudioSources avant de passer au handler
-        final audioSources = _convertArchivesToAudioSources(fetchedArchives);
-        await _audioHandler.setPlaylist(audioSources, _playlist);
+        // SAUVEGARDER dans Hive pour la prochaine fois
+        await CacheService.saveArchives(archivesWithCache);
         
-        _loading = false;
+        // Mettre à jour l'UI
+        _archiveList = archivesWithCache;
+        final audioSources = _convertArchivesToAudioSources(_archiveList);
+        await _audioHandler.setPlaylist(audioSources, _archiveList);
         notifyListeners();
-      } else {
-        _loading = false;
-        notifyListeners(); 
-        print('le fetch est vide');
       }
     } catch (e) {
-      errorMessage = "Erreur chargement playlist: ${e.toString()}";
-      print(errorMessage);
-      _loading = false;
-      notifyListeners();
+      print('Erreur réseau: $e');
+      // Pas grave, on garde les données du cache
+    }
+    
+    _isRefreshing = false;
+    notifyListeners();
+  }
+
+  
+  // Précharger les images
+  Future<void> preloadImages(BuildContext context) async {
+    if (_archiveList.isNotEmpty) {
+      await _rssService.preloadImages(_archiveList, context);
     }
   }
 
   // Rafraîchir la liste des archives
   Future<void> refreshArchivesList() async {
-    await loadPlaylist();
+    // Nettoyer le cache pour forcer le rechargement
+    _rssService.clearCache();
+    await _refreshFromNetwork();
   }
   
   // G E T T E R S
-  List<Archive> get playlist => _playlist;
+  List<Archive> get playlist => _archiveList;
   int? get currentArchiveIndex => _currentArchiveIndex;
   bool get audioPlayerIsPlaying => _audioPlayerIsPlaying;
-  bool get playListIsOn => _playListIsOn;
+  bool get playListIsOn => _archiveListIsOn;
+  bool get isRefreshing => _isRefreshing;
   bool get isLoading => _loading;
   Duration get currentDuration => _currentDuration;
   Duration get totalDuration => _totalDuration;
   
+  
   // S E T T E R S
   void setCurrentArchiveIndex(int? newIndex) {
-    if (newIndex != null && newIndex >= 0 && newIndex < _playlist.length) {
+    if (newIndex != null && newIndex >= 0 && newIndex < _archiveList.length) {
       _currentArchiveIndex = newIndex;
       _audioHandler.setCurrentIndex(newIndex);
       notifyListeners();
@@ -168,7 +218,9 @@ ArchiveProvider(this._audioHandler) {
   
   @override
   void dispose() {
+    _archiveListSubscription?.cancel();
     _audioHandler.stop();
+    _rssService.dispose();
     super.dispose();
   }
 }

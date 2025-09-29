@@ -1,11 +1,30 @@
 
-class Archive {
+import 'package:hive/hive.dart';
+
+part 'archive.g.dart'; // Fichier généré automatiquement
+
+@HiveType(typeId: 0) // ID unique pour ce type
+class Archive extends HiveObject {
+ @HiveField(0)
   final String title;
+  
+  @HiveField(1)
   final String audioUrl;
+  
+  @HiveField(2)
   final String? imageUrl;
+  
+  @HiveField(3)
   final String? author;
+  
+  @HiveField(4)
   final DateTime? publicationDate;
+  
+  @HiveField(5)
   final Duration? duration;
+  
+  @HiveField(6)
+  final DateTime cachedAt; // Quand on l'a mis en cache
 
   Archive({
     required this.title,
@@ -14,7 +33,8 @@ class Archive {
     this.author,
     this.publicationDate,
     this.duration,
-  });
+    DateTime? cachedAt,
+  }): cachedAt = cachedAt ?? DateTime.now();
 
   // Nouvelles propriétés pour le cache
   bool? _isImageCached;

@@ -5,12 +5,16 @@ import 'package:isdb_radio/providers/navigation_provider.dart';
 import 'package:isdb_radio/providers/streaming_provider.dart';
 import 'package:isdb_radio/pages/home_page.dart';
 import 'package:isdb_radio/services/audio_player_handler.dart';
+import 'package:isdb_radio/services/cache_service.dart';
 import 'package:isdb_radio/themes/theme.dart';
 import 'package:provider/provider.dart';
 
 late final AudioPlayerHandler audioHandler;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialiser le service de cache
+  await CacheService.init();
 
   // Audio Handler
   // Initialise AudioService et récupère ton handler

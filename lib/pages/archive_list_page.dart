@@ -3,17 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:isdb_radio/pages/listen_archive_page.dart';
 import 'package:isdb_radio/pages/research_archive_page.dart';
 import 'package:isdb_radio/providers/archive_provider.dart';
-import 'package:isdb_radio/widgets/archive_record_tile.dart';
 import 'package:provider/provider.dart';
 
-class ArchiveListPage extends StatelessWidget {
-const ArchiveListPage({ super.key });
+class ArchiveListPage extends StatefulWidget {
+  const ArchiveListPage({super.key});
 
-/// Navigate to song page and set current episode
+  @override
+  State<ArchiveListPage> createState() => _ArchiveListPageState();
+}
+
+class _ArchiveListPageState extends State<ArchiveListPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Précharger les images après que l'UI soit construite
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadImages();
+    });
+  }
+
+  void _preloadImages() {
+    final archiveProvider = Provider.of<ArchiveProvider>(context, listen: false);
+    archiveProvider.preloadImages(context);
+  }
+
+  /// Navigate to song page and set current episode
   void _goToEpisode(BuildContext context, int archiveIndex) {
     final archiveProvider = Provider.of<ArchiveProvider>(context, listen: false);
     archiveProvider.setCurrentArchiveIndex(archiveIndex);
-    print('Navigating to episode index: $archiveIndex');
+    debugPrint('Navigating to episode index: $archiveIndex');
     
     Navigator.push(
       context,
@@ -23,14 +41,14 @@ const ArchiveListPage({ super.key });
     );
   }
 
-/// Rafraîchir le podcast
+  /// Rafraîchir le podcast
   Future<void> _refreshArchive(BuildContext context) async {
     final archiveProvider = Provider.of<ArchiveProvider>(context, listen: false);
     await archiveProvider.refreshArchivesList();
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Consumer<ArchiveProvider>(
       builder: (context, archiveProvider, child) {
         return Scaffold(
@@ -50,12 +68,42 @@ const ArchiveListPage({ super.key });
                 flexibleSpace: FlexibleSpaceBar(
                   background: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(
-                      'Réécouter toutes émissions préférées en replay/podcast sur Radio ISDB',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.0,
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Réécouter toutes émissions préférées en replay/podcast sur Radio ISDB',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.0,
+                          ),
+                        ),
+                        // Indicateur de préchargement
+                        // if (archiveProvider.isPreloading) ...[
+                        //   SizedBox(height: 8),
+                        //   Row(
+                        //     children: [
+                        //       SizedBox(
+                        //         width: 12,
+                        //         height: 12,
+                        //         child: CircularProgressIndicator(
+                        //           strokeWidth: 2,
+                        //           valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                        //         ),
+                        //       ),
+                        //       SizedBox(width: 8),
+                        //       Text(
+                        //         'Optimisation en cours... ${(archiveProvider.preloadingProgress * 100).toInt()}%',
+                        //         style: TextStyle(
+                        //           color: Colors.white70,
+                        //           fontSize: 10,
+                        //         ),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ],
+                      ],
                     ),
                   ),
                 ),
@@ -68,7 +116,6 @@ const ArchiveListPage({ super.key });
                 flexibleSpace: FlexibleSpaceBar(
                   background: GestureDetector(
                     onTap: () {
-                      // Handle search tap
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => ResearchArchivePage()),
@@ -219,17 +266,43 @@ const ArchiveListPage({ super.key });
     );
   }
 
-  // Liste des Archives
+  // Liste des Archives optimisée
   Widget _buildEpisodesList(BuildContext context, ArchiveProvider archiveProvider) {
     return RefreshIndicator(
       onRefresh: () => _refreshArchive(context),
       child: Column(
         children: [
+          // // Barre de progression du préchargement
+          // if (archiveProvider.isPreloading)
+          //   Container(
+          //     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          //     child: Column(
+          //       children: [
+          //         LinearProgressIndicator(
+          //           value: archiveProvider.preloadingProgress,
+          //           backgroundColor: Colors.grey[300],
+          //           valueColor: AlwaysStoppedAnimation<Color>(
+          //             Theme.of(context).colorScheme.primary,
+          //           ),
+          //         ),
+          //         SizedBox(height: 4),
+          //         Text(
+          //           'Optimisation: ${archiveProvider.preloadedCount} éléments préchargés',
+          //           style: TextStyle(
+          //             fontSize: 12,
+          //             color: Colors.grey[600],
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          
+          // Liste des épisodes
           Expanded(
-            child: ListView.separated(
+            child: ListView.builder( // Changé de separated à builder pour de meilleures performances
               itemCount: archiveProvider.playlist.length,
               padding: const EdgeInsets.all(8.0),
-              separatorBuilder: (context, index) => const Divider(height: 1),
+              cacheExtent: 1000, // Cache plus d'éléments pour un scrolling fluide
               itemBuilder: (context, index) {
                 final archive = archiveProvider.playlist[index];
                 final isCurrentArchive = archiveProvider.currentArchiveIndex == index;
@@ -239,7 +312,7 @@ const ArchiveListPage({ super.key });
                   margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(12),
-                    leading: _buildEpisodeImage(archive, archiveProvider),
+                    leading: _buildOptimizedEpisodeImage(archive, archiveProvider),
                     title: Text(
                       archive.title,
                       style: TextStyle(
@@ -251,55 +324,7 @@ const ArchiveListPage({ super.key });
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (archive.author != null) ...[
-                          Text(
-                            archive.author!,
-                            style: TextStyle(
-                              color: isCurrentArchive 
-                                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
-                                  : Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        Row(
-                          children: [
-                            if (archive.publicationDate != null) ...[
-                              Text(
-                                _formatDate(archive.publicationDate!),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                              if (archive.duration != null) ...[
-                                const Text(' • ', style: TextStyle(color: Colors.grey)),
-                                Text(
-                                  'archive.duration',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ] else if (archive.duration != null) ...[
-                              Text(
-                                'archive.duration',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
+                    subtitle: _buildEpisodeSubtitle(archive, isCurrentArchive, context),
                     trailing: isCurrentArchive
                         ? Icon(
                             archiveProvider.audioPlayerIsPlaying ? Icons.pause : Icons.play_arrow,
@@ -314,6 +339,59 @@ const ArchiveListPage({ super.key });
           ),
         ],
       ),
+    );
+  }
+
+  /// Sous-titre optimisé pour les épisodes
+  Widget _buildEpisodeSubtitle(archive, bool isCurrentArchive, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (archive.author != null) ...[
+          Text(
+            archive.author!,
+            style: TextStyle(
+              color: isCurrentArchive 
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+                  : Colors.grey[600],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+        ],
+        Row(
+          children: [
+            if (archive.publicationDate != null) ...[
+              Text(
+                _formatDate(archive.publicationDate!),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
+              ),
+              if (archive.duration != null) ...[
+                const Text(' • ', style: TextStyle(color: Colors.grey)),
+                Text(
+                  archive.duration.toString(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ] else if (archive.duration != null) ...[
+              Text(
+                archive.duration.toString(),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
@@ -340,24 +418,40 @@ const ArchiveListPage({ super.key });
     }
   }
 
-
-  /// Image d'un épisode
-  Widget _buildEpisodeImage(archive, ArchiveProvider archiveProvider) {
+  /// Image d'un épisode optimisée avec cache amélioré
+  Widget _buildOptimizedEpisodeImage(archive, ArchiveProvider archiveProvider) {
     final imageUrl = archive.imageUrl;
     
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: imageUrl != null
+      child: imageUrl != null && imageUrl.startsWith('http')
           ? CachedNetworkImage(
               imageUrl: imageUrl,
               width: 60,
               height: 60,
               fit: BoxFit.cover,
+              // Optimisations du cache
+              memCacheWidth: 120, // Cache en mémoire à une taille réduite
+              memCacheHeight: 120,
+              maxWidthDiskCache: 200, // Cache disque optimisé
+              maxHeightDiskCache: 200,
+              // États de chargement optimisés
               placeholder: (context, url) => Container(
                 width: 60,
                 height: 60,
                 color: Colors.grey[300],
-                child: const Icon(Icons.image, color: Colors.white70),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               errorWidget: (context, url, error) => Container(
                 width: 60,
@@ -365,6 +459,10 @@ const ArchiveListPage({ super.key });
                 color: Colors.grey[300],
                 child: const Icon(Icons.broken_image, color: Colors.white70),
               ),
+              // Optimisation: ne pas refaire de requête si l'image échoue
+              errorListener: (error) {
+                debugPrint("Erreur chargement image: $error");
+              },
             )
           : Container(
               width: 60,
@@ -372,6 +470,6 @@ const ArchiveListPage({ super.key });
               color: Colors.grey[300],
               child: const Icon(Icons.image, color: Colors.white70),
             ),
-    ); 
+    );
   }
 }
