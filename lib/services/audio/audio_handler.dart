@@ -17,6 +17,11 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
   bool _isLive = false;
 
+  /// Kept so the media-notification play button can rejoin the live stream:
+  /// pausing a live stream stops the player (rather than buffering stale audio),
+  /// so "play" has to start a fresh connection, not resume.
+  StreamConfig? _lastLiveConfig;
+
   Future<void> _init() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
@@ -54,8 +59,12 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
     });
   }
 
-  void _broadcastState(PlaybackEvent event) {
-    final playing = _player.playing;
+  void _broadcastState([PlaybackEvent? event]) {
+    // just_audio's stop() leaves `playing` true (it only reflects play/pause
+    // intent), so treat an idle player as not playing — otherwise the media
+    // notification keeps showing a pause button after a live stop.
+    final playing =
+        _player.playing && _player.processingState != ProcessingState.idle;
     playbackState.add(
       PlaybackState(
         controls: [
@@ -88,6 +97,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Start (or restart) the live stream.
   Future<void> playLive(StreamConfig config) async {
     _isLive = true;
+    _lastLiveConfig = config;
     final item = MediaItem(
       id: config.streamUrl,
       title: config.stationName,
@@ -147,10 +157,27 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    // Resuming a live stream from the notification: the player was stopped, so
+    // reconnect instead of a no-op _player.play().
+    if (_isLive &&
+        _player.processingState == ProcessingState.idle &&
+        _lastLiveConfig != null) {
+      await playLive(_lastLiveConfig!);
+      return;
+    }
+    await _player.play();
+  }
 
   @override
-  Future<void> pause() => _isLive ? _player.stop() : _player.pause();
+  Future<void> pause() async {
+    if (_isLive) {
+      await _player.stop();
+      _broadcastState(); // stop() doesn't reliably flip `playing` — force it
+    } else {
+      await _player.pause();
+    }
+  }
 
   @override
   Future<void> stop() async {

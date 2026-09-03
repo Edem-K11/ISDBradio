@@ -83,13 +83,16 @@ class AudioWaveAndLiveIndicator extends StatelessWidget {
     super.key,
     required AnimationController audioWaveController,
     required bool isPlaying,
+    bool isConnecting = false,
     bool isPaused = false,
   }) : _audioWaveController = audioWaveController,
        _isPlaying = isPlaying,
+       _isConnecting = isConnecting,
        _isPaused = isPaused;
 
   final AnimationController _audioWaveController;
   final bool _isPlaying;
+  final bool _isConnecting;
   final bool _isPaused;
 
   @override
@@ -128,18 +131,24 @@ class AudioWaveAndLiveIndicator extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: _isPlaying
                       ? Colors.red
-                      : (_isPaused ? Colors.orange : Colors.grey[400]),
+                      : (_isConnecting || _isPaused
+                            ? Colors.orange
+                            : Colors.grey[400]),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 _isPlaying
                     ? 'LIVE'
-                    : (_isPaused ? 'EN PAUSE' : 'OFFLINE'),
+                    : (_isConnecting
+                          ? 'CONNEXION…'
+                          : (_isPaused ? 'EN PAUSE' : 'OFFLINE')),
                 style: TextStyle(
                   color: _isPlaying
                       ? Colors.red
-                      : (_isPaused ? Colors.orange[800] : Colors.grey[600]),
+                      : (_isConnecting || _isPaused
+                            ? Colors.orange[800]
+                            : Colors.grey[600]),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,

@@ -57,8 +57,12 @@ class _LivePageState extends State<LivePage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final player = context.watch<PlayerController>();
-    final livePlaying = player.isLivePlaying && player.isPlaying;
-    _syncVinyl(livePlaying);
+    final isLive = player.isLivePlaying;
+    // Animations run only while audio is actually playing — they freeze during
+    // a (re)connection instead of spinning on nothing.
+    final streaming = isLive && player.isStreaming;
+    final connecting = isLive && player.isBuffering;
+    _syncVinyl(streaming);
 
     return Scaffold(
       appBar: AppBar(
@@ -90,14 +94,15 @@ class _LivePageState extends State<LivePage> with TickerProviderStateMixin {
               const SizedBox(height: 8),
               RadioWavyLineAndVynilRotation(
                 waveController: _waveController,
-                isPlaying: livePlaying,
+                isPlaying: streaming,
                 vinylController: _vinylController,
               ),
               const SizedBox(height: 8),
               AudioWaveAndLiveIndicator(
                 audioWaveController: _audioWaveController,
-                isPlaying: livePlaying,
-                isPaused: player.isLivePlaying && !player.isPlaying,
+                isPlaying: streaming,
+                isConnecting: connecting,
+                isPaused: isLive && !streaming && !connecting,
               ),
               const SizedBox(height: 8),
               _NowPlaying(player: player),

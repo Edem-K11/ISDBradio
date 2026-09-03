@@ -59,6 +59,10 @@ class PlayerController extends ChangeNotifier {
   bool get isBuffering =>
       _phase == PlayPhase.loading || _phase == PlayPhase.buffering;
 
+  /// Audio is actually coming out — false while (re)connecting or buffering.
+  /// Drives the on-screen animations so they freeze during a reconnection.
+  bool get isStreaming => _phase == PlayPhase.playing;
+
   // ---------------------------------------------------------------------------
   // Live
   // ---------------------------------------------------------------------------
