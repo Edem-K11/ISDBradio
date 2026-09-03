@@ -22,6 +22,11 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   /// so "play" has to start a fresh connection, not resume.
   StreamConfig? _lastLiveConfig;
 
+  /// True between a live "pause" (which stops the player) and the next play.
+  /// Lets us present a real paused state — dismissable notification, working
+  /// play button — instead of "nothing playing".
+  bool _livePaused = false;
+
   Future<void> _init() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
@@ -79,13 +84,15 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
           MediaAction.seekBackward,
         },
         androidCompactActionIndices: _isLive ? const [0] : const [0, 1, 2],
-        processingState: switch (_player.processingState) {
-          ProcessingState.idle => AudioProcessingState.idle,
-          ProcessingState.loading => AudioProcessingState.loading,
-          ProcessingState.buffering => AudioProcessingState.buffering,
-          ProcessingState.ready => AudioProcessingState.ready,
-          ProcessingState.completed => AudioProcessingState.completed,
-        },
+        processingState: _livePaused
+            ? AudioProcessingState.ready
+            : switch (_player.processingState) {
+                ProcessingState.idle => AudioProcessingState.idle,
+                ProcessingState.loading => AudioProcessingState.loading,
+                ProcessingState.buffering => AudioProcessingState.buffering,
+                ProcessingState.ready => AudioProcessingState.ready,
+                ProcessingState.completed => AudioProcessingState.completed,
+              },
         playing: playing,
         updatePosition: _player.position,
         bufferedPosition: _player.bufferedPosition,
@@ -97,6 +104,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Start (or restart) the live stream.
   Future<void> playLive(StreamConfig config) async {
     _isLive = true;
+    _livePaused = false;
     _lastLiveConfig = config;
     final item = MediaItem(
       id: config.streamUrl,
@@ -128,6 +136,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> playEpisode(Episode episode) async {
     if (!episode.isPlayable) return;
     _isLive = false;
+    _livePaused = false;
     final item = MediaItem(
       id: episode.audioUrl!,
       title: episode.title,
@@ -158,11 +167,9 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() async {
-    // Resuming a live stream from the notification: the player was stopped, so
-    // reconnect instead of a no-op _player.play().
-    if (_isLive &&
-        _player.processingState == ProcessingState.idle &&
-        _lastLiveConfig != null) {
+    // Resuming a paused live stream (e.g. from the notification): the player was
+    // stopped, so reconnect instead of a no-op _player.play().
+    if (_isLive && _livePaused && _lastLiveConfig != null) {
       await playLive(_lastLiveConfig!);
       return;
     }
@@ -172,8 +179,9 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> pause() async {
     if (_isLive) {
+      _livePaused = true;
       await _player.stop();
-      _broadcastState(); // stop() doesn't reliably flip `playing` — force it
+      _broadcastState(); // stop() doesn't emit a clean state — force it
     } else {
       await _player.pause();
     }
@@ -183,6 +191,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> stop() async {
     await _player.stop();
     _isLive = false;
+    _livePaused = false;
     mediaItem.add(null);
     await super.stop();
   }
