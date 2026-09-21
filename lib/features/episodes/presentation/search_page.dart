@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_state_views.dart';
+import '../../../core/widgets/glass_panel.dart';
 import '../../player/widgets/mini_player.dart';
 import 'episode_search_controller.dart';
 import 'widgets/category_filter_bar.dart';
@@ -71,21 +72,38 @@ class _SearchViewState extends State<_SearchView> {
           ),
         ),
       ),
-      body: Column(
+      // The mini-player floats over the results (see AppShell) instead of
+      // reserving its own strip, so it stays consistent everywhere it shows.
+      body: Stack(
         children: [
-          if (controller.categories.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 2),
-              child: CategoryFilterBar(
-                categories: controller.categories,
-                selected: controller.selectedCategory,
-                onSelected: controller.selectCategory,
-              ),
+          Positioned.fill(
+            child: Column(
+              children: [
+                if (controller.categories.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, bottom: 2),
+                    child: CategoryFilterBar(
+                      categories: controller.categories,
+                      selected: controller.selectedCategory,
+                      onSelected: controller.selectCategory,
+                    ),
+                  ),
+                Expanded(child: _body(controller)),
+              ],
             ),
-          Expanded(child: _body(controller)),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              minimum: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: MiniPlayer(),
+            ),
+          ),
         ],
       ),
-      bottomNavigationBar: const MiniPlayer(),
     );
   }
 
@@ -108,6 +126,7 @@ class _SearchViewState extends State<_SearchView> {
       );
     }
     return ListView.builder(
+      padding: const EdgeInsets.only(bottom: kFloatingBarClearance),
       itemCount: c.results.length,
       itemBuilder: (_, i) => EpisodeTile(episode: c.results[i], queue: c.results),
     );
@@ -134,6 +153,7 @@ class _RecentSearches extends StatelessWidget {
       );
     }
     return ListView(
+      padding: const EdgeInsets.only(bottom: kFloatingBarClearance),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),

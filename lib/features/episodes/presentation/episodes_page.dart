@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/widgets/app_state_views.dart';
+import '../../../core/widgets/glass_panel.dart';
 import 'episodes_controller.dart';
 import 'widgets/category_filter_bar.dart';
 import 'widgets/episode_tile.dart';
@@ -156,7 +157,9 @@ class _EpisodesViewState extends State<_EpisodesView> {
           return EpisodeTile(episode: c.episodes[index], queue: c.episodes);
         },
       ),
-      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+      const SliverToBoxAdapter(
+        child: SizedBox(height: kFloatingShellClearance),
+      ),
     ];
   }
 }

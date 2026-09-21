@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/widgets/glass_panel.dart';
 import '../../player/player_controller.dart';
 import '../../shell/widgets/app_drawer.dart';
 import 'widgets/audio_animation.dart';
@@ -88,7 +89,7 @@ class _LivePageState extends State<LivePage> with TickerProviderStateMixin {
           onRefresh: player.refreshConfig,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 80),
+            padding: const EdgeInsets.only(bottom: kFloatingShellClearance),
             children: [
               _StationHeader(slogan: player.slogan),
               const SizedBox(height: 8),

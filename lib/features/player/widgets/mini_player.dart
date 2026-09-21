@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/glass_panel.dart';
 import '../player_controller.dart';
 
 /// Compact playback bar shown above the bottom navigation (and on secondary
@@ -46,51 +47,57 @@ class _MiniPlayerState extends State<MiniPlayer>
       _vinyl.stop();
     }
 
+    // Slide-up-from-the-bottom-edge reveal (grows anchored at the bottom, so
+    // the content appears to rise into place) rather than an abrupt pop.
     return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
       alignment: Alignment.bottomCenter,
       child: hidden
           ? const SizedBox(width: double.infinity)
-          : Material(
-              color: scheme.surfaceContainerHigh,
-              child: InkWell(
-                onTap: () => _open(context, player),
-                child: SizedBox(
-                  height: 64,
-                  child: Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
-                        child: Row(
-                          children: [
-                            _leading(player, scheme),
-                            const SizedBox(width: 12),
-                            Expanded(child: _labels(context, player)),
-                            const SizedBox(width: 4),
-                            _trailing(context, player, scheme),
-                          ],
+          : GlassPanel(
+              borderRadius: 26,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: () => _open(context, player),
+                  child: SizedBox(
+                    height: 64,
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+                          child: Row(
+                            children: [
+                              _leading(player, scheme),
+                              const SizedBox(width: 12),
+                              Expanded(child: _labels(context, player)),
+                              const SizedBox(width: 4),
+                              _trailing(context, player, scheme),
+                            ],
+                          ),
                         ),
-                      ),
-                      // Thin accent progress line along the very top edge —
-                      // the mini-player's only "scrub" affordance.
-                      if (player.kind == PlayerKind.episode)
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: SizedBox(
-                            height: 2.5,
-                            child: LinearProgressIndicator(
-                              value: player.episodeProgress,
-                              minHeight: 2.5,
-                              backgroundColor: Colors.transparent,
-                              valueColor: AlwaysStoppedAnimation(
-                                scheme.primary,
+                        // Thin accent progress line along the very top edge —
+                        // the mini-player's only "scrub" affordance.
+                        if (player.kind == PlayerKind.episode)
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: SizedBox(
+                              height: 2.5,
+                              child: LinearProgressIndicator(
+                                value: player.episodeProgress,
+                                minHeight: 2.5,
+                                backgroundColor: Colors.transparent,
+                                valueColor: AlwaysStoppedAnimation(
+                                  scheme.primary,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

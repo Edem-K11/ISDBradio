@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../core/format.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/app_state_views.dart';
+import '../../../core/widgets/glass_panel.dart';
 import '../../player/player_controller.dart';
 import '../../player/widgets/mini_player.dart';
 import '../data/episode.dart';
@@ -159,18 +160,36 @@ class _EpisodePlayerPageState extends State<EpisodePlayerPage> {
           const SizedBox(width: 4),
         ],
       ),
-      body: _loading
-          ? const AppLoader()
-          : _error != null
-          ? AppErrorView(message: _error!)
-          : NotificationListener<ScrollNotification>(
-              onNotification: _onScroll,
-              child: _PlayerView(
-                initialEpisode: _episode!,
-                scrollController: _scrollController,
-              ),
+      // The mini-player floats over the content (only relevant here if the
+      // live stream keeps playing behind this page — the episode itself is
+      // suppressed) instead of reserving its own strip.
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: _loading
+                ? const AppLoader()
+                : _error != null
+                ? AppErrorView(message: _error!)
+                : NotificationListener<ScrollNotification>(
+                    onNotification: _onScroll,
+                    child: _PlayerView(
+                      initialEpisode: _episode!,
+                      scrollController: _scrollController,
+                    ),
+                  ),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              minimum: EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: MiniPlayer(suppress: PlayerKind.episode),
             ),
-      bottomNavigationBar: const MiniPlayer(suppress: PlayerKind.episode),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -202,7 +221,7 @@ class _PlayerView extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, kFloatingBarClearance),
       children: [
         AspectRatio(
           aspectRatio: 1,
