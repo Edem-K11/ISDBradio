@@ -46,7 +46,7 @@ class AppShell extends StatelessWidget {
                   // More translucent than the mini-player (opacity 0.65 vs
                   // 0.9) so the two read as related but distinct surfaces.
                   GlassPanel(
-                    borderRadius: 32,
+                    borderRadius: 42,
                     opacity: 0.65,
                     // NavigationBar wraps its own content in a SafeArea, which
                     // pads for the *device's* status bar / gesture inset —
@@ -64,7 +64,7 @@ class AppShell extends StatelessWidget {
                       removeLeft: true,
                       removeRight: true,
                       child: NavigationBar(
-                        height: 64,
+                        height: 84,
                         backgroundColor: Colors.transparent,
                         elevation: 0,
                         selectedIndex: navigationShell.currentIndex,
