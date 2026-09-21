@@ -17,7 +17,6 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final onLiveTab = navigationShell.currentIndex == 0;
 
     return Scaffold(
@@ -45,43 +44,35 @@ class AppShell extends StatelessWidget {
                   // blurred — content is meant to show faintly through it.
                   // More translucent than the mini-player (opacity 0.65 vs
                   // 0.9) so the two read as related but distinct surfaces.
+                  //
+                  // Custom-built (not Material's NavigationBar): M3's
+                  // indicator only ever wraps the icon, and the label sits
+                  // outside it with no background of its own. Here the
+                  // highlight pill wraps icon *and* label together.
                   GlassPanel(
                     borderRadius: 42,
                     opacity: 0.65,
-                    // NavigationBar wraps its own content in a SafeArea, which
-                    // pads for the *device's* status bar / gesture inset —
-                    // meaningless for a pill floating well clear of both, and
-                    // asymmetric here since our own SafeArea above already
-                    // consumed the bottom inset but left the top one alone
-                    // (top: false). Left unhandled, that phantom top padding
-                    // silently added to `height`, which is why shrinking it
-                    // barely moved anything. Strip it so `height` is the real,
-                    // final height.
-                    child: MediaQuery.removePadding(
-                      context: context,
-                      removeTop: true,
-                      removeBottom: true,
-                      removeLeft: true,
-                      removeRight: true,
-                      child: NavigationBar(
-                        height: 84,
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        selectedIndex: navigationShell.currentIndex,
-                        onDestinationSelected: (index) => navigationShell.goBranch(
-                          index,
-                          initialLocation: index == navigationShell.currentIndex,
-                        ),
-                        destinations: [
-                          NavigationDestination(
-                            icon: Icon(Icons.radio, color: scheme.onSurfaceVariant),
-                            selectedIcon: Icon(Icons.radio, color: scheme.primary),
+                    child: SizedBox(
+                      height: 84,
+                      child: Row(
+                        children: [
+                          _NavTab(
+                            icon: Icons.radio,
                             label: 'Direct',
+                            selected: navigationShell.currentIndex == 0,
+                            onTap: () => navigationShell.goBranch(
+                              0,
+                              initialLocation: navigationShell.currentIndex == 0,
+                            ),
                           ),
-                          NavigationDestination(
-                            icon: Icon(Icons.podcasts, color: scheme.onSurfaceVariant),
-                            selectedIcon: Icon(Icons.podcasts, color: scheme.primary),
+                          _NavTab(
+                            icon: Icons.podcasts,
                             label: 'Émissions',
+                            selected: navigationShell.currentIndex == 1,
+                            onTap: () => navigationShell.goBranch(
+                              1,
+                              initialLocation: navigationShell.currentIndex == 1,
+                            ),
                           ),
                         ],
                       ),
@@ -92,6 +83,68 @@ class AppShell extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NavTab extends StatelessWidget {
+  const _NavTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = selected ? scheme.primary : scheme.onSurfaceVariant;
+
+    return Expanded(
+      child: Semantics(
+        selected: selected,
+        button: true,
+        label: label,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? scheme.primary.withValues(alpha: 0.16)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 22, color: color),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
