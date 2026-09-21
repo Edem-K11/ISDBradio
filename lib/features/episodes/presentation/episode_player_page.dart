@@ -11,6 +11,7 @@ import '../../player/player_controller.dart';
 import '../../player/widgets/mini_player.dart';
 import '../data/episode.dart';
 import '../data/episode_repository.dart';
+import 'widgets/episode_details_sheet.dart';
 
 class EpisodePlayerPage extends StatefulWidget {
   const EpisodePlayerPage({super.key, this.slug, this.episode});
@@ -26,11 +27,43 @@ class _EpisodePlayerPageState extends State<EpisodePlayerPage> {
   Episode? _episode;
   String? _error;
   bool _loading = true;
+  final _scrollController = ScrollController();
+  String? _trackedSlug;
+  PlayerController? _player;
 
   @override
   void initState() {
     super.initState();
     _resolve();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _player ??= context.read<PlayerController>()
+      ..addListener(_onPlayerChanged);
+  }
+
+  @override
+  void dispose() {
+    _player?.removeListener(_onPlayerChanged);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Jump back to the top (cover art) whenever the controller switches to a
+  // different episode — via prev/next — so the new one is what's on screen.
+  void _onPlayerChanged() {
+    final slug = _player?.episode?.slug;
+    if (slug == null || slug == _trackedSlug) return;
+    _trackedSlug = slug;
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   Future<void> _resolve() async {
@@ -60,6 +93,7 @@ class _EpisodePlayerPageState extends State<EpisodePlayerPage> {
       _episode = episode;
       _loading = false;
     });
+    _trackedSlug = episode.slug;
     unawaited(context.read<PlayerController>().openEpisode(episode));
   }
 
@@ -93,53 +127,70 @@ class _EpisodePlayerPageState extends State<EpisodePlayerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    // Watched so the info button always opens the sheet for whatever the
+    // player is actually on — including after prev/next moved it along.
+    final player = context.watch<PlayerController>();
+    final currentEpisode =
+        (player.kind == PlayerKind.episode ? player.episode : null) ??
+        _episode;
+
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        toolbarHeight: 44,
+        toolbarHeight: 52,
+        // Swipe down anywhere on the bar (buttons still get their taps first).
         flexibleSpace: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onVerticalDragUpdate: _onDragDown,
           onVerticalDragEnd: _onDragEnd,
         ),
-        title: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: _onDragDown,
-          onVerticalDragEnd: _onDragEnd,
-          child: Container(
-            width: 44,
-            height: 5,
-            margin: const EdgeInsets.only(top: 4),
-            decoration: BoxDecoration(
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(3),
-            ),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 30),
+          tooltip: 'Retour aux émissions',
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
+        actions: [
+          if (currentEpisode != null)
+            IconButton(
+              icon: const Icon(Icons.info_outline_rounded),
+              tooltip: "Détails de l'émission",
+              onPressed: () =>
+                  showEpisodeDetailsSheet(context, currentEpisode),
+            ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _loading
           ? const AppLoader()
           : _error != null
-              ? AppErrorView(message: _error!)
-              : NotificationListener<ScrollNotification>(
-                  onNotification: _onScroll,
-                  child: _PlayerView(episode: _episode!),
-                ),
+          ? AppErrorView(message: _error!)
+          : NotificationListener<ScrollNotification>(
+              onNotification: _onScroll,
+              child: _PlayerView(
+                initialEpisode: _episode!,
+                scrollController: _scrollController,
+              ),
+            ),
       bottomNavigationBar: const MiniPlayer(suppress: PlayerKind.episode),
     );
   }
 }
 
 class _PlayerView extends StatelessWidget {
-  const _PlayerView({required this.episode});
+  const _PlayerView({required this.initialEpisode, required this.scrollController});
 
-  final Episode episode;
+  final Episode initialEpisode;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
     final player = context.watch<PlayerController>();
     final scheme = Theme.of(context).colorScheme;
+    // Once playback has started this tracks whatever the controller is
+    // currently on — so tapping "next"/"previous" updates this same sheet
+    // instead of needing a new route.
+    final episode = player.kind == PlayerKind.episode
+        ? (player.episode ?? initialEpisode)
+        : initialEpisode;
     final isCurrent = player.isCurrentEpisode(episode);
 
     final total = isCurrent && player.duration > Duration.zero
@@ -147,10 +198,11 @@ class _PlayerView extends StatelessWidget {
         : (episode.duration ?? Duration.zero);
 
     return ListView(
+      controller: scrollController,
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
       children: [
         AspectRatio(
           aspectRatio: 1,
@@ -166,19 +218,40 @@ class _PlayerView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        Text(episode.title, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 4),
-        Text(
-          episode.category?.name ?? 'Émission',
-          style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w600),
-        ),
-        if (episode.description != null && episode.description!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            episode.description!,
-            style: Theme.of(context).textTheme.bodyMedium,
+        GestureDetector(
+          onTap: () => showEpisodeDetailsSheet(context, episode),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      episode.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      episode.category?.name ?? 'Émission',
+                      style: TextStyle(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 20,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
           ),
-        ],
+        ),
         const SizedBox(height: 28),
         _ProgressBar(
           position: isCurrent ? player.position : Duration.zero,
@@ -287,14 +360,13 @@ class _Controls extends StatelessWidget {
   Widget build(BuildContext context) {
     final player = context.watch<PlayerController>();
     final isCurrent = player.isCurrentEpisode(episode);
-    final total = player.duration;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _OutlineButton(
           icon: Icons.skip_previous_rounded,
-          onTap: isCurrent ? () => player.seek(Duration.zero) : null,
+          onTap: isCurrent ? player.playPrevious : null,
         ),
         _OutlineButton(
           icon: Icons.replay_10_rounded,
@@ -313,9 +385,7 @@ class _Controls extends StatelessWidget {
         ),
         _OutlineButton(
           icon: Icons.skip_next_rounded,
-          onTap: (isCurrent && total > Duration.zero)
-              ? () => player.seek(total)
-              : null,
+          onTap: (isCurrent && player.hasNextEpisode) ? player.playNext : null,
         ),
       ],
     );

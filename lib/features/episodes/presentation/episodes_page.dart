@@ -153,7 +153,7 @@ class _EpisodesViewState extends State<_EpisodesView> {
               child: Center(child: CircularProgressIndicator()),
             );
           }
-          return EpisodeTile(episode: c.episodes[index]);
+          return EpisodeTile(episode: c.episodes[index], queue: c.episodes);
         },
       ),
       const SliverToBoxAdapter(child: SizedBox(height: 16)),

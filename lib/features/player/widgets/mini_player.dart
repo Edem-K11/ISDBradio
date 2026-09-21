@@ -56,26 +56,39 @@ class _MiniPlayerState extends State<MiniPlayer>
               child: InkWell(
                 onTap: () => _open(context, player),
                 child: SizedBox(
-                  height: 60,
-                  child: Column(
+                  height: 64,
+                  child: Stack(
                     children: [
-                      Expanded(
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
                         child: Row(
                           children: [
-                            const SizedBox(width: 10),
                             _leading(player, scheme),
                             const SizedBox(width: 12),
                             Expanded(child: _labels(context, player)),
-                            _trailing(player, scheme),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4),
+                            _trailing(context, player, scheme),
                           ],
                         ),
                       ),
+                      // Thin accent progress line along the very top edge —
+                      // the mini-player's only "scrub" affordance.
                       if (player.kind == PlayerKind.episode)
-                        LinearProgressIndicator(
-                          value: player.episodeProgress,
-                          minHeight: 2,
-                          backgroundColor: scheme.surfaceContainerHighest,
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: SizedBox(
+                            height: 2.5,
+                            child: LinearProgressIndicator(
+                              value: player.episodeProgress,
+                              minHeight: 2.5,
+                              backgroundColor: Colors.transparent,
+                              valueColor: AlwaysStoppedAnimation(
+                                scheme.primary,
+                              ),
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -98,7 +111,7 @@ class _MiniPlayerState extends State<MiniPlayer>
       return RotationTransition(
         turns: _vinyl,
         child: const CircleAvatar(
-          radius: 18,
+          radius: 20,
           backgroundColor: AppColors.green,
           backgroundImage: AssetImage('assets/images/logo_isdb.png'),
         ),
@@ -106,10 +119,10 @@ class _MiniPlayerState extends State<MiniPlayer>
     }
     final cover = player.episode?.coverUrl;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(10),
       child: SizedBox(
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         child: cover != null
             ? CachedNetworkImage(imageUrl: cover, fit: BoxFit.cover)
             : const Image(
@@ -139,11 +152,12 @@ class _MiniPlayerState extends State<MiniPlayer>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
             color: scheme.onSurface,
           ),
         ),
+        const SizedBox(height: 2),
         Text(
           subtitle,
           maxLines: 1,
@@ -161,7 +175,11 @@ class _MiniPlayerState extends State<MiniPlayer>
     );
   }
 
-  Widget _trailing(PlayerController player, ColorScheme scheme) {
+  Widget _trailing(
+    BuildContext context,
+    PlayerController player,
+    ColorScheme scheme,
+  ) {
     if (player.isBuffering) {
       return const Padding(
         padding: EdgeInsets.all(14),
@@ -193,12 +211,24 @@ class _MiniPlayerState extends State<MiniPlayer>
         ],
       );
     }
-    return IconButton(
-      icon: Icon(
-        player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-      ),
-      color: scheme.onSurface,
-      onPressed: player.toggleEpisode,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(
+            player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+          ),
+          color: scheme.onSurface,
+          onPressed: player.toggleEpisode,
+        ),
+        IconButton(
+          icon: const Icon(Icons.skip_next_rounded),
+          color: player.hasNextEpisode
+              ? scheme.onSurface
+              : scheme.onSurfaceVariant.withValues(alpha: 0.4),
+          onPressed: player.hasNextEpisode ? player.playNext : null,
+        ),
+      ],
     );
   }
 }

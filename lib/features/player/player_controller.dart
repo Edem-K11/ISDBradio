@@ -144,11 +144,21 @@ class PlayerController extends ChangeNotifier {
   bool _completed = false;
   bool _reportedPlay = false;
 
+  /// The list an episode was opened from (its category page, search results…),
+  /// so the player's prev/next controls can move through it. Kept separate
+  /// from `_episode` so it survives across `openEpisode` calls.
+  List<Episode> _queue = [];
+  int _queueIndex = -1;
+
   Episode? get episode => _episode;
   Duration get position => _position;
   Duration get duration => _duration;
   bool get isEpisodeCompleted => _completed;
   bool get isEpisodePlaying => _kind == PlayerKind.episode;
+
+  bool get hasNextEpisode =>
+      _queueIndex >= 0 && _queueIndex < _queue.length - 1;
+  bool get hasPreviousEpisode => _queueIndex > 0;
 
   double get episodeProgress {
     final total = _duration.inMilliseconds;
@@ -159,11 +169,30 @@ class PlayerController extends ChangeNotifier {
   bool isCurrentEpisode(Episode e) =>
       _kind == PlayerKind.episode && _episode?.slug == e.slug;
 
+  /// Remembers the list an episode was opened from (a category page, search
+  /// results…) so prev/next can move through it. Call this before navigating
+  /// to the player; `openEpisode` then locates `current` inside it.
+  void setQueue(List<Episode> episodes, Episode current) {
+    _queue = List.of(episodes);
+    _queueIndex = _queue.indexWhere((x) => x.slug == current.slug);
+  }
+
   /// Called when an episode screen opens. Starts the episode unless it is
   /// already the active one (and not finished).
   Future<void> openEpisode(Episode e) async {
     final sameAndRunning =
         _kind == PlayerKind.episode && _episode?.slug == e.slug && !_completed;
+
+    final idx = _queue.indexWhere((x) => x.slug == e.slug);
+    if (idx == -1) {
+      // Opened standalone (deep link, mini-player, notification) — it's the
+      // only thing we know about.
+      _queue = [e];
+      _queueIndex = 0;
+    } else {
+      _queueIndex = idx;
+    }
+
     if (sameAndRunning) return;
 
     _episode = e;
@@ -177,6 +206,26 @@ class PlayerController extends ChangeNotifier {
     notifyListeners();
 
     await _startEpisode(e);
+  }
+
+  /// Next episode in the queue, if any.
+  Future<void> playNext() async {
+    if (!hasNextEpisode) return;
+    await openEpisode(_queue[_queueIndex + 1]);
+  }
+
+  /// Previous episode in the queue — or, if we're more than a few seconds
+  /// into the current one, just restart it (standard player behaviour).
+  Future<void> playPrevious() async {
+    if (_kind == PlayerKind.episode && _position > const Duration(seconds: 3)) {
+      await seek(Duration.zero);
+      return;
+    }
+    if (!hasPreviousEpisode) {
+      await seek(Duration.zero);
+      return;
+    }
+    await openEpisode(_queue[_queueIndex - 1]);
   }
 
   Future<void> toggleEpisode() async {

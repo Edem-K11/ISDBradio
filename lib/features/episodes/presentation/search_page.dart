@@ -109,7 +109,7 @@ class _SearchViewState extends State<_SearchView> {
     }
     return ListView.builder(
       itemCount: c.results.length,
-      itemBuilder: (_, i) => EpisodeTile(episode: c.results[i]),
+      itemBuilder: (_, i) => EpisodeTile(episode: c.results[i], queue: c.results),
     );
   }
 }

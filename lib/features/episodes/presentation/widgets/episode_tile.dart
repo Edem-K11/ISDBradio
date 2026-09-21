@@ -9,9 +9,14 @@ import '../../../player/widgets/equalizer_icon.dart';
 import '../../data/episode.dart';
 
 class EpisodeTile extends StatelessWidget {
-  const EpisodeTile({super.key, required this.episode});
+  const EpisodeTile({super.key, required this.episode, this.queue});
 
   final Episode episode;
+
+  /// The list this tile is part of (its category page, search results…), so
+  /// the player's prev/next controls can move through it. Falls back to just
+  /// this episode when omitted.
+  final List<Episode>? queue;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +34,13 @@ class EpisodeTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => context.push('/episodes/${episode.slug}', extra: episode),
+          onTap: () {
+            context.read<PlayerController>().setQueue(
+              queue ?? [episode],
+              episode,
+            );
+            context.push('/episodes/${episode.slug}', extra: episode);
+          },
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Row(
