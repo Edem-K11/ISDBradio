@@ -43,10 +43,13 @@ class AppShell extends StatelessWidget {
                   const SizedBox(height: 8),
                   // Pill-shaped floating nav bar: fully rounded, translucent,
                   // blurred — content is meant to show faintly through it.
+                  // More translucent than the mini-player (opacity 0.65 vs
+                  // 0.9) so the two read as related but distinct surfaces.
                   GlassPanel(
-                    borderRadius: 32,
+                    borderRadius: 42,
+                    opacity: 0.65,
                     child: NavigationBar(
-                      height: 64,
+                      height: 84,
                       backgroundColor: Colors.transparent,
                       elevation: 0,
                       selectedIndex: navigationShell.currentIndex,

@@ -57,6 +57,10 @@ class _MiniPlayerState extends State<MiniPlayer>
           ? const SizedBox(width: double.infinity)
           : GlassPanel(
               borderRadius: 26,
+              // More opaque than the nav bar (0.9 vs 0.65) — it carries
+              // text/art that needs to stay legible, and reads as the more
+              // "present" of the two floating surfaces.
+              opacity: 0.9,
               child: Material(
                 type: MaterialType.transparency,
                 child: InkWell(
