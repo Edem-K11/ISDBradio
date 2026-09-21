@@ -44,37 +44,14 @@ class AppShell extends StatelessWidget {
                   // blurred — content is meant to show faintly through it.
                   // More translucent than the mini-player (opacity 0.65 vs
                   // 0.9) so the two read as related but distinct surfaces.
-                  //
-                  // Custom-built (not Material's NavigationBar): M3's
-                  // indicator only ever wraps the icon, and the label sits
-                  // outside it with no background of its own. Here the
-                  // highlight pill wraps icon *and* label together.
                   GlassPanel(
                     borderRadius: 42,
                     opacity: 0.65,
-                    child: SizedBox(
-                      height: 84,
-                      child: Row(
-                        children: [
-                          _NavTab(
-                            icon: Icons.radio,
-                            label: 'Direct',
-                            selected: navigationShell.currentIndex == 0,
-                            onTap: () => navigationShell.goBranch(
-                              0,
-                              initialLocation: navigationShell.currentIndex == 0,
-                            ),
-                          ),
-                          _NavTab(
-                            icon: Icons.podcasts,
-                            label: 'Émissions',
-                            selected: navigationShell.currentIndex == 1,
-                            onTap: () => navigationShell.goBranch(
-                              1,
-                              initialLocation: navigationShell.currentIndex == 1,
-                            ),
-                          ),
-                        ],
+                    child: _PillNavBar(
+                      currentIndex: navigationShell.currentIndex,
+                      onSelect: (index) => navigationShell.goBranch(
+                        index,
+                        initialLocation: index == navigationShell.currentIndex,
                       ),
                     ),
                   ),
@@ -88,8 +65,81 @@ class AppShell extends StatelessWidget {
   }
 }
 
-class _NavTab extends StatelessWidget {
-  const _NavTab({
+class _TabSpec {
+  const _TabSpec(this.icon, this.label);
+  final IconData icon;
+  final String label;
+}
+
+const _kNavBarHeight = 84.0;
+
+/// A capsule that physically slides between destinations (iOS-style), instead
+/// of each tab owning its own independent highlight. There is exactly one
+/// coloured background in the tree; it just moves.
+class _PillNavBar extends StatelessWidget {
+  const _PillNavBar({required this.currentIndex, required this.onSelect});
+
+  final int currentIndex;
+  final ValueChanged<int> onSelect;
+
+  static const _tabs = [
+    _TabSpec(Icons.radio, 'Direct'),
+    _TabSpec(Icons.podcasts, 'Émissions'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final count = _tabs.length;
+    // -1 (fully left) .. +1 (fully right) for an Alignment along the row.
+    final x = -1.0 + (2.0 * currentIndex / (count - 1));
+
+    return SizedBox(
+      height: _kNavBarHeight,
+      child: Stack(
+        children: [
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 300),
+            // Apple's characteristic decelerate-and-settle easing.
+            curve: const Cubic(0.25, 1, 0.5, 1),
+            alignment: Alignment(x, 0),
+            child: FractionallySizedBox(
+              widthFactor: 1 / count,
+              heightFactor: 1,
+              // Tiny inset so the capsule reads as "inside" the bar rather
+              // than exactly flush with its edges — not a big card margin.
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              for (var i = 0; i < count; i++)
+                Expanded(
+                  child: _TabContent(
+                    icon: _tabs[i].icon,
+                    label: _tabs[i].label,
+                    selected: i == currentIndex,
+                    onTap: () => onSelect(i),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabContent extends StatelessWidget {
+  const _TabContent({
     required this.icon,
     required this.label,
     required this.selected,
@@ -106,42 +156,35 @@ class _NavTab extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final color = selected ? scheme.primary : scheme.onSurfaceVariant;
 
-    return Expanded(
-      child: Semantics(
-        selected: selected,
-        button: true,
-        label: label,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? scheme.primary.withValues(alpha: 0.16)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: label,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          // The sliding capsule behind is the only "pressed" feedback we
+          // want — no ripple/highlight rectangle drawn on top of it.
+          splashFactory: NoSplash.splashFactory,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 22, color: color),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: color,
+                  ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 22, color: color),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
         ),
