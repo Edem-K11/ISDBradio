@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Radio ISDB (backend Render)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define=API_BASE_URL=https://isdb-radio-api.onrender.com/api/v1"
+            ]
+        },
+        {
+            "name": "Radio ISDB (backend local)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1"
+            ]
+        }
+    ]
+}

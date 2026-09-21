@@ -46,29 +46,45 @@ class AppShell extends StatelessWidget {
                   // More translucent than the mini-player (opacity 0.65 vs
                   // 0.9) so the two read as related but distinct surfaces.
                   GlassPanel(
-                    borderRadius: 42,
+                    borderRadius: 32,
                     opacity: 0.65,
-                    child: NavigationBar(
-                      height: 84,
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      selectedIndex: navigationShell.currentIndex,
-                      onDestinationSelected: (index) => navigationShell.goBranch(
-                        index,
-                        initialLocation: index == navigationShell.currentIndex,
+                    // NavigationBar wraps its own content in a SafeArea, which
+                    // pads for the *device's* status bar / gesture inset —
+                    // meaningless for a pill floating well clear of both, and
+                    // asymmetric here since our own SafeArea above already
+                    // consumed the bottom inset but left the top one alone
+                    // (top: false). Left unhandled, that phantom top padding
+                    // silently added to `height`, which is why shrinking it
+                    // barely moved anything. Strip it so `height` is the real,
+                    // final height.
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeTop: true,
+                      removeBottom: true,
+                      removeLeft: true,
+                      removeRight: true,
+                      child: NavigationBar(
+                        height: 64,
+                        backgroundColor: Colors.transparent,
+                        elevation: 0,
+                        selectedIndex: navigationShell.currentIndex,
+                        onDestinationSelected: (index) => navigationShell.goBranch(
+                          index,
+                          initialLocation: index == navigationShell.currentIndex,
+                        ),
+                        destinations: [
+                          NavigationDestination(
+                            icon: Icon(Icons.radio, color: scheme.onSurfaceVariant),
+                            selectedIcon: Icon(Icons.radio, color: scheme.primary),
+                            label: 'Direct',
+                          ),
+                          NavigationDestination(
+                            icon: Icon(Icons.podcasts, color: scheme.onSurfaceVariant),
+                            selectedIcon: Icon(Icons.podcasts, color: scheme.primary),
+                            label: 'Émissions',
+                          ),
+                        ],
                       ),
-                      destinations: [
-                        NavigationDestination(
-                          icon: Icon(Icons.radio, color: scheme.onSurfaceVariant),
-                          selectedIcon: Icon(Icons.radio, color: scheme.primary),
-                          label: 'Direct',
-                        ),
-                        NavigationDestination(
-                          icon: Icon(Icons.podcasts, color: scheme.onSurfaceVariant),
-                          selectedIcon: Icon(Icons.podcasts, color: scheme.primary),
-                          label: 'Émissions',
-                        ),
-                      ],
                     ),
                   ),
                 ],
